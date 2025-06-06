@@ -52,7 +52,7 @@ def is_connected():
         return False
 
 # === CONFIG ===
-NOTE_TYPE = "German Auto"  
+NOTE_TYPE = "Spanish Auto"  
 ANKI_ENDPOINT = "http://localhost:8765"
 
 # === GEMINI QUERY ===
@@ -60,31 +60,31 @@ def query_gemini(word):
     global API_KEY
     GEMINI_ENDPOINT = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={API_KEY}"
     prompt = (
-        f"You are a helpful German language assistant. For the word: **{word}**, provide the following structured information.\n"
+        f"You are a helpful Spanish language assistant. For the word: **{word}**, provide the following structured information.\n"
         "If the word is not a valid German word, return this JSON exactly:\n"
         "{\"error\": \"Not a valid German word\"}\n\n"
-        "1. **base_d**: The original German word\n"
+        "1. **base_s**: The original German word\n"
         "2. **base_e**: The English translation(s)\n"
-        "3. **artikel_d**: The definite article if the word is a noun (e.g., \"der\", \"die\", \"das\"). Leave empty if not a noun.\n"
-        "4. **plural_d**: The plural form (for nouns). Leave empty if not a noun.\n"
-        "5. **praesens**: Present tense (3rd person singular), e.g., \"läuft\"\n"
-        "6. **praeteritum**: Simple past tense (3rd person singular), e.g., \"lief\"\n"
-        "7. **perfekt**: Present perfect form, e.g., \"ist gelaufen\"\n"
-        "8. **full_d**: A combined string of the above three conjugation forms, e.g., \"läuft, lief, ist gelaufen\"\n"
+        "3. **articulo_s**: The definite article if the word is a noun (e.g., \"der\", \"die\", \"das\"). Leave empty if not a noun.\n"
+        "4. **plural_s**: The plural form (for nouns). Leave empty if not a noun.\n"
+        "5. **presente**: Present tense (3rd person singular), e.g., \"läuft\"\n"
+        "6. **preterito**: Simple past tense (3rd person singular), e.g., \"lief\"\n"
+        "7. **participio**: Present perfect form, e.g., \"ist gelaufen\"\n"
+        "8. **full_s**: A combined string of the above three conjugation forms, e.g., \"läuft, lief, ist gelaufen\"\n"
         "9. **s1**: A natural German sentence using the word, with its English translation in parentheses.\n"
         "10. **s2** (optional): A second sentence only if the word has a different context.\n"
         "11. **s3** (optional): A third sentence to demonstrate nuance or complexity, if useful.\n\n"
         "Example:\n"
         "```json\n"
         "{\n"
-        "  \"base_d\": \"laufen\",\n"
+        "  \"base_s\": \"laufen\",\n"
         "  \"base_e\": \"to run\",\n"
-        "  \"artikel_d\": \"\",\n"
-        "  \"plural_d\": \"\",\n"
-        "  \"praesens\": \"läuft\",\n"
-        "  \"praeteritum\": \"lief\",\n"
-        "  \"perfekt\": \"ist gelaufen\",\n"
-        "  \"full_d\": \"läuft, lief, ist gelaufen\",\n"
+        "  \"articulo_s\": \"\",\n"
+        "  \"plural_s\": \"\",\n"
+        "  \"presente\": \"läuft\",\n"
+        "  \"preterito\": \"lief\",\n"
+        "  \"participio\": \"ist gelaufen\",\n"
+        "  \"full_s\": \"läuft, lief, ist gelaufen\",\n"
         "  \"s1\": \"Ich laufe jeden Morgen im Park. (I run every morning in the park.)\",\n"
         "  \"s2\": \"Er läuft zur Arbeit, weil er den Bus verpasst hat. (He runs to work because he missed the bus.)\",\n"
         "  \"s3\": \"Der Hund läuft im Garten herum. (The dog is running around in the garden.)\"\n"
@@ -134,22 +134,22 @@ def query_gemini(word):
         else:
             parsed["s3e"] = ""
 
-        # Ensure full_d is a string
-        if isinstance(parsed.get("full_d"), dict):
-            forms = parsed["full_d"]
-            parsed["full_d"] = ", ".join([
+        # Ensure full_s is a string
+        if isinstance(parsed.get("full_s"), dict):
+            forms = parsed["full_s"]
+            parsed["full_s"] = ", ".join([
                 forms.get("Präsens", ""),
                 forms.get("Präteritum", ""),
                 forms.get("Perfekt", "")
             ])
-        elif parsed.get("artikel_d") and parsed.get("base_d"):
-            base_d_clean = parsed["base_d"].strip()
-            artikel_d = parsed["artikel_d"].strip()
-            # Avoid duplicate article if base_d already contains it
-            if base_d_clean.lower().startswith(artikel_d.lower() + " "):
-                parsed["full_d"] = base_d_clean
+        elif parsed.get("articulo_s") and parsed.get("base_s"):
+            base_s_clean = parsed["base_s"].strip()
+            articulo_s = parsed["articulo_s"].strip()
+            # Avoid duplicate article if base_s already contains it
+            if base_s_clean.lower().startswith(articulo_s.lower() + " "):
+                parsed["full_s"] = base_s_clean
             else:
-                parsed["full_d"] = f"{artikel_d} {base_d_clean}"
+                parsed["full_s"] = f"{articulo_s} {base_s_clean}"
 
         return parsed
 
@@ -158,7 +158,7 @@ def query_gemini(word):
 
 # === ANKI ADD ===
 def add_to_anki(parsed_word, deck_name, allow_duplicates):
-    required_fields = ["base_d", "base_e", "s1"]
+    required_fields = ["base_s", "base_e", "s1"]
     if (
         not parsed_word or
         "error" in parsed_word or
@@ -167,26 +167,26 @@ def add_to_anki(parsed_word, deck_name, allow_duplicates):
         print(f"[DEBUG] Incomplete Gemini response for word. Full content:\n{json.dumps(parsed_word, indent=2, ensure_ascii=False)}")
         return False, "Cannot create note: required fields missing or Gemini failed."
 
-    # === Fallback for full_d ===
-    if not parsed_word.get("full_d"):
-        praesens = parsed_word.get("praesens", "").strip()
-        praeteritum = parsed_word.get("praeteritum", "").strip()
-        perfekt = parsed_word.get("perfekt", "").strip()
+    # === Fallback for full_s ===
+    if not parsed_word.get("full_s"):
+        presente = parsed_word.get("presente", "").strip()
+        preterito = parsed_word.get("preterito", "").strip()
+        participio = parsed_word.get("participio", "").strip()
 
-        if praesens or praeteritum or perfekt:
-            parsed_word["full_d"] = ", ".join(filter(None, [praesens, praeteritum, perfekt]))
-        elif parsed_word.get("artikel_d") and parsed_word.get("base_d"):
-            parsed_word["full_d"] = f"{parsed_word['artikel_d'].strip()} {parsed_word['base_d'].strip()}"
+        if presente or preterito or participio:
+            parsed_word["full_s"] = ", ".join(filter(None, [presente, preterito, participio]))
+        elif parsed_word.get("articulo_s") and parsed_word.get("base_s"):
+            parsed_word["full_s"] = f"{parsed_word['articulo_s'].strip()} {parsed_word['base_s'].strip()}"
         else:
-            parsed_word["full_d"] = parsed_word.get("base_d", "")
+            parsed_word["full_s"] = parsed_word.get("base_s", "")
 
     audio_fields = []
-    base_d = parsed_word.get("base_d", "").strip()
+    base_s = parsed_word.get("base_s", "").strip()
     s1 = parsed_word.get("s1", "").strip()
     s2 = parsed_word.get("s2", "").strip()
     s3 = parsed_word.get("s3", "").strip()
-    print(base_d)
-    base_audio = generate_tts_audio(base_d.replace(" ", ""), os.urandom(8).hex())
+    print(base_s)
+    base_audio = generate_tts_audio(base_s.replace(" ", ""), os.urandom(8).hex())
     if base_audio:
         audio_fields.append({
             "url": None,
@@ -226,12 +226,12 @@ def add_to_anki(parsed_word, deck_name, allow_duplicates):
             })
 
     fields = {
-        "base_d": str(parsed_word.get("base_d", "") or ""),
+        "base_s": str(parsed_word.get("base_s", "") or ""),
         "base_e": str(parsed_word.get("base_e", "") or ""),
-        "artikel_d": str(parsed_word.get("artikel_d", "") or ""),
-        "plural_d": str(parsed_word.get("plural_d", "") or ""),
-        "full_d": parsed_word.get("full_d") if parsed_word.get("full_d") is not None else "",
-        "audio_text_d": parsed_word.get("full_d") if parsed_word.get("full_d") is not None else "",
+        "articulo_s": str(parsed_word.get("articulo_s", "") or ""),
+        "plural_s": str(parsed_word.get("plural_s", "") or ""),
+        "full_s": parsed_word.get("full_s") if parsed_word.get("full_s") is not None else "",
+        "audio_text_s": parsed_word.get("full_s") if parsed_word.get("full_s") is not None else "",
         "s1": str(parsed_word.get("s1", "") or ""),
         "s1e": str(parsed_word.get("s1e", "") or ""),
         "s2": str(parsed_word.get("s2", "") or ""),
@@ -259,7 +259,7 @@ def add_to_anki(parsed_word, deck_name, allow_duplicates):
         response = requests.post(ANKI_ENDPOINT, json=payload)
         result = response.json()
         if result.get("error") is None:
-            return True, f"Added: {fields['base_d']}"
+            return True, f"Added: {fields['base_s']}"
         else:
             return False, result["error"]
     except Exception as e:
@@ -270,7 +270,7 @@ def generate_tts_audio(text, filename_hint):
         filename = os.path.join(tempfile.gettempdir(), f"sapi5js-{filename_hint}.mp3")
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        communicate = Communicate(text, "de-DE-KatjaNeural")
+        communicate = Communicate(text, "es-ES-ElviraNeural")
         loop.run_until_complete(communicate.save(filename))
         with open(filename, "rb") as f:
             audio_data = base64.b64encode(f.read()).decode("utf-8")
@@ -347,8 +347,8 @@ def get_phrasemaster_decks():
                 valid_decks.append(deck)
     return valid_decks
 # === Check for duplicates ===
-def is_duplicate(base_d_value, base_a_value):
-    query = f'note:"{NOTE_TYPE.strip()}" base_d:"{base_d_value}" base_a:"{base_a_value}"'
+def is_duplicate(base_s_value, base_a_value):
+    query = f'note:"{NOTE_TYPE.strip()}" base_s:"{base_s_value}" base_a:"{base_a_value}"'
     payload = {
         "action": "findNotes",
         "version": 6,
@@ -494,8 +494,8 @@ def run_gui():
                 progress_bar.setValue(progress_bar.value() + 1)
                 continue
 
-            if is_duplicate(gemini_data.get("base_d", ""), gemini_data.get("base_a", "")):
-                output_box.append(f"Skipped duplicate: {gemini_data.get('base_d', '')}\n")
+            if is_duplicate(gemini_data.get("base_s", ""), gemini_data.get("base_a", "")):
+                output_box.append(f"Skipped duplicate: {gemini_data.get('base_s', '')}\n")
                 progress_bar.setValue(progress_bar.value() + 1)
                 continue
 
@@ -762,7 +762,7 @@ def run_gui():
                 fields = {
                     "Phrase(German)": german_text,
                     "Translation": english_text,
-                    "audio_text_d": german_text
+                    "audio_text_s": german_text
                 }
                 if include_notes_checkbox.isChecked():
                     fields["note"] = parsed.get("note", "")
